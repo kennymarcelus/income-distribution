@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Income Distribution</title>
+  <style>
+    /* ── Design tokens ─────────────────────────────────────────── */
+    :root {
+      --bg:        #161618;
+      --surface:   #1e1e20;
+      --surface2:  #28282c;
+      --border:    #333336;
+      --text:      #f0f0f0;
+      --muted:     #7a7a82;
+      --yellow:    #f5c518;
+      --yellow-bg: rgba(245, 197, 24, 0.12);
+      --green:     #30d158;
+      --danger:    #ff453a;
+      --radius:    14px;
+      --font-ui:   -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-num:  'SF Mono', 'Fira Mono', 'Consolas', monospace;
+    }
+
+    /* ── Reset ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    /* ── App shell ─────────────────────────────────────────────── */
+    .app {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .app-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0 4px;
+      margin-bottom: 4px;
+    }
+
+    /* ── Income display ────────────────────────────────────────── */
+    .display-wrap {
+      background: var(--yellow);
+      border-radius: var(--radius);
+      padding: 2px;
+    }
+    .display-inner {
+      background: var(--yellow);
+      border-radius: calc(var(--radius) - 2px);
+      display: flex;
+      align-items: center;
+      padding: 18px 22px;
+      gap: 8px;
+    }
+    .display-prefix {
+      font-family: var(--font-num);
+      font-size: 36px;
+      font-weight: 700;
+      color: #1a1400;
+      line-height: 1;
+      user-select: none;
+    }
+    #income-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: var(--font-num);
+      font-size: 44px;
+      font-weight: 700;
+      color: #1a1400;
+      line-height: 1;
+      width: 100%;
+      min-width: 0;
+      caret-color: #1a1400;
+    }
+    #income-input::placeholder { color: rgba(26, 20, 0, 0.35); }
+    /* hide number spinners */
+    #income-input::-webkit-inner-spin-button,
+    #income-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    #income-input[type=number] { -moz-appearance: textfield; }
+
+    /* ── Distribution card ─────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    /* ── Row ───────────────────────────────────────────────────── */
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+      min-height: 56px;
+    }
+    .row:last-child { border-bottom: none; }
+    .row.retained {
+      background: var(--surface2);
+      border-top: 1px solid var(--border);
+      border-bottom: none;
+    }
+
+    /* Label */
+    .row-label {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      outline: none;
+      min-width: 0;
+      word-break: break-word;
+      cursor: text;
+      border-radius: 4px;
+      padding: 2px 4px;
+      margin-left: -4px;
+      transition: background 0.15s;
+    }
+    .row-label:focus {
+      background: var(--surface2);
+      box-shadow: 0 0 0 1px var(--border);
+    }
+    .row.retained .row-label {
+      color: var(--green);
+      cursor: default;
+    }
+
+    /* Type toggle / badge */
+    .type-btn {
+      font-family: var(--font-num);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      line-height: 1;
+      min-width: 38px;
+      text-align: center;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .type-btn.pct  { background: rgba(245,197,24,0.18); color: var(--yellow); }
+    .type-btn.fixed { background: rgba(48,209,88,0.18); color: var(--green); }
+    .type-btn.auto  {
+      background: var(--surface2);
+      color: var(--muted);
+      cursor: default;
+      font-size: 11px;
+    }
+
+    /* Value input */
+    .row-value {
+      font-family: var(--font-num);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 5px 8px;
+      width: 72px;
+      text-align: right;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .row-value:focus { border-color: var(--yellow); }
+    .row-value::-webkit-inner-spin-button,
+    .row-value::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .row-value[type=number] { -moz-appearance: textfield; }
+
+    /* Calculated amount */
+    .row-amount {
+      font-family: var(--font-num);
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      text-align: right;
+      white-space: nowrap;
+      min-width: 90px;
+    }
+    .row.retained .row-amount {
+      font-size: 20px;
+      color: var(--green);
+    }
+
+    /* Delete button */
+    .delete-btn {
+      background: none;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 6px;
+      border-radius: 6px;
+      opacity: 0.55;
+      transition: opacity 0.15s;
+      min-width: 32px;
+      text-align: center;
+    }
+    .delete-btn:hover { opacity: 1; }
+
+    /* Spacer for retained row (no delete btn) */
+    .row-spacer { width: 32px; flex-shrink: 0; }
+
+    /* ── Add row button ─────────────────────────────────────────── */
+    .add-row-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      width: 100%;
+      padding: 14px;
+      background: var(--surface);
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .add-row-btn:hover {
+      border-color: var(--yellow);
+      color: var(--yellow);
+      background: var(--yellow-bg);
+    }
+
+    /* ── Responsive tweaks ─────────────────────────────────────── */
+    @media (max-width: 400px) {
+      body { padding: 16px 10px 40px; }
+      .display-inner { padding: 14px 16px; }
+      .display-prefix { font-size: 28px; }
+      #income-input { font-size: 36px; }
+      .row { padding: 12px 12px; gap: 6px; }
+      .row-amount { min-width: 74px; font-size: 15px; }
+      .row-value { width: 62px; }
+      .row.retained .row-amount { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <p class="app-title">Income Distribution</p>
+
+    <!-- Income display -->
+    <div class="display-wrap">
+      <div class="display-inner">
+        <span class="display-prefix">€</span>
+        <input
+          type="number"
+          id="income-input"
+          placeholder="0"
+          min="0"
+          step="any"
+          inputmode="decimal"
+          autocomplete="off"
+        />
+      </div>
+    </div>
+
+    <!-- Distribution rows -->
+    <div class="card" id="rows-container"></div>
+
+    <!-- Add row -->
+    <button class="add-row-btn" id="add-row-btn">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      Add Row
+    </button>
+  </div>
+
+  <script>
+    // ── State ────────────────────────────────────────────────────
+    let nextId = 6;
+    let rows = [
+      { id: 1, label: 'Taxes',               type: 'percent',   value: 30  },
+      { id: 2, label: 'Business Expenses',   type: 'fixed',     value: 150 },
+      { id: 3, label: 'Business Savings',    type: 'percent',   value: 10  },
+      { id: 4, label: 'Mel payout',          type: 'fixed',     value: 250 },
+      { id: 5, label: 'Retained in account', type: 'remaining', value: null},
+    ];
+
+    // ── Calculation ──────────────────────────────────────────────
+    function calculate(income) {
+      let allocated = 0;
+      const amounts = {};
+
+      rows.forEach(row => {
+        if (row.type === 'percent') {
+          const amt = income * (row.value / 100);
+          amounts[row.id] = amt;
+          allocated += amt;
+        } else if (row.type === 'fixed') {
+          const amt = row.value;
+          amounts[row.id] = amt;
+          allocated += amt;
+        }
+      });
+
+      rows.forEach(row => {
+        if (row.type === 'remaining') {
+          amounts[row.id] = Math.max(0, income - allocated);
+        }
+      });
+
+      return amounts;
+    }
+
+    // ── Format ───────────────────────────────────────────────────
+    function fmt(n) {
+      if (isNaN(n)) return '€0.00';
+      return '€' + n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // ── Render ───────────────────────────────────────────────────
+    function render() {
+      const income = parseFloat(document.getElementById('income-input').value) || 0;
+      const amounts = calculate(income);
+      const container = document.getElementById('rows-container');
+
+      // Preserve focus state
+      const focused = document.activeElement;
+      const focusedRowId = focused ? parseInt(focused.dataset.rowId) : null;
+      const focusedField = focused ? focused.dataset.field : null;
+
+      container.innerHTML = '';
+
+      rows.forEach(row => {
+        const div = document.createElement('div');
+        div.className = 'row' + (row.type === 'remaining' ? ' retained' : '');
+        div.dataset.id = row.id;
+
+        // Label
+        const label = document.createElement('span');
+        label.className = 'row-label';
+        label.contentEditable = row.type === 'remaining' ? 'false' : 'true';
+        label.spellcheck = false;
+        label.textContent = row.label;
+        label.dataset.rowId = row.id;
+        label.dataset.field = 'label';
+        label.addEventListener('blur', onLabelBlur);
+        label.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); label.blur(); } });
+        div.appendChild(label);
+
+        // Type badge / toggle
+        const typeBtn = document.createElement('button');
+        typeBtn.className = 'type-btn ' + (row.type === 'percent' ? 'pct' : row.type === 'fixed' ? 'fixed' : 'auto');
+        typeBtn.textContent = row.type === 'percent' ? '%' : row.type === 'fixed' ? '€' : 'auto';
+        typeBtn.dataset.rowId = row.id;
+        if (row.type !== 'remaining') {
+          typeBtn.addEventListener('click', onTypeToggle);
+          typeBtn.title = 'Toggle between % and fixed €';
+        } else {
+          typeBtn.disabled = true;
+        }
+        div.appendChild(typeBtn);
+
+        // Value input (not for remaining)
+        if (row.type !== 'remaining') {
+          const valInput = document.createElement('input');
+          valInput.type = 'number';
+          valInput.className = 'row-value';
+          valInput.value = row.value;
+          valInput.min = '0';
+          valInput.step = row.type === 'percent' ? '1' : '1';
+          valInput.inputMode = 'decimal';
+          valInput.dataset.rowId = row.id;
+          valInput.dataset.field = 'value';
+          valInput.addEventListener('input', onValueInput);
+          div.appendChild(valInput);
+        } else {
+          // Empty spacer so grid stays aligned
+          const spacer = document.createElement('div');
+          div.appendChild(spacer);
+        }
+
+        // Calculated amount
+        const amount = document.createElement('div');
+        amount.className = 'row-amount';
+        amount.textContent = fmt(amounts[row.id]);
+        div.appendChild(amount);
+
+        // Delete button (not for remaining)
+        if (row.type !== 'remaining') {
+          const del = document.createElement('button');
+          del.className = 'delete-btn';
+          del.innerHTML = '&times;';
+          del.title = 'Remove row';
+          del.dataset.rowId = row.id;
+          del.addEventListener('click', onDeleteRow);
+          div.appendChild(del);
+        }
+
+        container.appendChild(div);
+      });
+
+      // Restore focus
+      if (focusedRowId && focusedField) {
+        const el = container.querySelector(`[data-row-id="${focusedRowId}"][data-field="${focusedField}"]`);
+        if (el && el !== document.activeElement) {
+          el.focus();
+          // Restore cursor to end for contenteditable
+          if (el.contentEditable === 'true') {
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(el);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+        }
+      }
+    }
+
+    // ── Event handlers ───────────────────────────────────────────
+    function onLabelBlur(e) {
+      const id = parseInt(e.target.dataset.rowId);
+      const row = rows.find(r => r.id === id);
+      if (row) {
+        const newLabel = e.target.textContent.trim();
+        row.label = newLabel || row.label;
+      }
+    }
+
+    function onTypeToggle(e) {
+      const id = parseInt(e.target.dataset.rowId);
+      const row = rows.find(r => r.id === id);
+      if (row) {
+        row.type = row.type === 'percent' ? 'fixed' : 'percent';
+        if (row.type === 'percent' && (row.value > 100 || row.value === 0)) row.value = 10;
+        render();
+      }
+    }
+
+    function onValueInput(e) {
+      const id = parseInt(e.target.dataset.rowId);
+      const row = rows.find(r => r.id === id);
+      if (row) {
+        row.value = parseFloat(e.target.value) || 0;
+        // Only re-render the amounts, not the whole DOM (keeps focus)
+        updateAmounts();
+      }
+    }
+
+    function onDeleteRow(e) {
+      const id = parseInt(e.target.dataset.rowId);
+      rows = rows.filter(r => r.id !== id);
+      render();
+    }
+
+    document.getElementById('add-row-btn').addEventListener('click', () => {
+      // Insert before the retained row
+      const retainedIdx = rows.findIndex(r => r.type === 'remaining');
+      const newRow = { id: nextId++, label: 'New Category', type: 'percent', value: 0 };
+      if (retainedIdx >= 0) {
+        rows.splice(retainedIdx, 0, newRow);
+      } else {
+        rows.push(newRow);
+      }
+      render();
+      // Focus the new label
+      const newLabel = document.querySelector(`[data-row-id="${newRow.id}"][data-field="label"]`);
+      if (newLabel) {
+        newLabel.focus();
+        document.execCommand('selectAll', false, null);
+      }
+    });
+
+    document.getElementById('income-input').addEventListener('input', updateAmounts);
+
+    // ── Lightweight amount-only update (preserves all inputs) ────
+    function updateAmounts() {
+      const income = parseFloat(document.getElementById('income-input').value) || 0;
+      const amounts = calculate(income);
+      document.querySelectorAll('#rows-container .row').forEach(div => {
+        const id = parseInt(div.dataset.id);
+        const amountEl = div.querySelector('.row-amount');
+        if (amountEl) amountEl.textContent = fmt(amounts[id]);
+      });
+    }
+
+    // ── Init ─────────────────────────────────────────────────────
+    render();
+    document.getElementById('income-input').focus();
+  </script>
+</body>
+</html>
