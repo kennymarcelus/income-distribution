@@ -1,6 +1,6 @@
 # Income Distribution Calculator
 
-A clean, minimal calculator for freelancers to instantly see where their money goes. Type in your income and it splits automatically into taxes, expenses, savings, payouts, and whatever's left over — no buttons, no page reloads.
+A clean, minimal calculator for anyone who wants to see where their money goes. Enter your income or salary and it splits automatically across categories like housing, groceries, savings, and more — no buttons, no page reloads.
 
 ---
 
@@ -9,14 +9,14 @@ A clean, minimal calculator for freelancers to instantly see where their money g
 ```
 INCOME DISTRIBUTION
 
-  € 5000
+  € 3000
 
-  Taxes               %   30    €1.500,00
-  Business Expenses   €  150      €150,00
-  Business Savings    %   10      €500,00
-  Mel payout          €  250      €250,00
-  ─────────────────────────────────────────
-  Retained in account          €2.600,00
+  Groceries    %   15    €450.00
+  Transport    €  120    €120.00
+  Housing      %   35  €1,050.00
+  Other        €   80     €80.00
+  ─────────────────────────────────
+  Retained in account  €1,300.00
 
   + Add Row
 ```
@@ -46,24 +46,25 @@ open income-distribution.html
 ## Features
 
 **Instant calculation**
-Type your income and every row updates in real time — no submit button needed.
+Type your income or salary and every row updates in real time — no submit button needed.
 
 **Two row types**
-- `%` — percentage of your income (e.g. 30% for taxes)
-- `€` — a fixed euro amount (e.g. €250 flat fee)
+- `%` — percentage of your income (e.g. 35% for housing)
+- `€` — a fixed euro amount (e.g. €120 flat transport cost)
 
 Click the `%` or `€` badge on any row to switch between the two.
 
 **Retained in account**
-The bottom row always shows what's left after all deductions. It updates automatically and can never go below €0.
+The bottom row always shows what's left after all deductions. It updates automatically and turns red if your allocations exceed your income.
 
-**Fully editable rows**
-- Click any category name to rename it
-- Change the `%` or `€` value at any time
-- Delete a row with the `×` button
+**Preset category dropdown**
+Each row has a dropdown with 15 common personal finance categories to choose from: Groceries, Transport, Housing, Utilities, Savings, Taxes, Insurance, Healthcare, Entertainment, Dining Out, Clothing, Education, Subscriptions, Personal Care, and Other.
 
 **Add custom rows**
-Click `+ Add Row` to add a new category. It starts as a percentage row — rename it and set the value you need.
+Click `+ Add Row` to add a new category. Pick a label from the dropdown and set the value you need.
+
+**Delete rows**
+Hover over any row and click the `×` button to remove it.
 
 **Mobile friendly**
 Works on phones and tablets. All buttons are large enough to tap comfortably.
@@ -77,40 +78,45 @@ Keyboard navigable and compatible with screen readers (WCAG AA).
 
 | Category | Type | Value |
 |---|---|---|
-| Taxes | % | 30 |
-| Business Expenses | € fixed | 150 |
-| Business Savings | % | 10 |
-| Mel payout | € fixed | 250 |
+| Groceries | % | 0 |
+| Transport | € fixed | 0 |
+| Housing | % | 0 |
+| Other | € fixed | 0 |
 | Retained in account | auto | — |
 
-You can rename, edit, add, or delete any of these (except "Retained in account").
+All rows start at 0 so you can set your own values. You can add, remove, or change any row except "Retained in account".
+
+---
+
+## Available category labels
+
+When adding or changing a row, choose from:
+
+Groceries · Transport · Housing · Utilities · Savings · Taxes · Insurance · Healthcare · Entertainment · Dining Out · Clothing · Education · Subscriptions · Personal Care · Other
 
 ---
 
 ## Example usage
 
-**Scenario: You invoiced €5,000 this month**
+**Scenario: Divide a €3,000 monthly salary**
 
-Enter `5000` in the yellow field. The calculator immediately shows:
+Enter `3000`. Then set up rows to reflect your actual spending:
 
-| Category | Calculation | Result |
-|---|---|---|
-| Taxes | 5000 × 30% | €1,500.00 |
-| Business Expenses | fixed | €150.00 |
-| Business Savings | 5000 × 10% | €500.00 |
-| Mel payout | fixed | €250.00 |
-| **Retained in account** | 5000 − 2400 | **€2,600.00** |
+| Category | Type | Value | Result |
+|---|---|---|---|
+| Groceries | % | 15 | €450.00 |
+| Transport | € | 120 | €120.00 |
+| Housing | % | 35 | €1,050.00 |
+| Savings | % | 10 | €300.00 |
+| **Retained in account** | auto | — | **€1,080.00** |
 
-**Scenario: You want to add a pension contribution**
+**Scenario: You spend over your income**
 
-1. Click `+ Add Row`
-2. Click the label "New Category" and type `Pension`
-3. Make sure the badge shows `%`, then set the value to `5`
-4. All rows recalculate instantly — the retained amount drops accordingly
+If the total of your rows exceeds your income, the "Retained in account" row turns red and shows "over by €X.XX" so you can see exactly how much you need to cut.
 
-**Scenario: A row should be a flat fee instead of a percentage**
+**Scenario: Switch a row from percentage to fixed**
 
-Click the `%` badge on that row. It switches to `€` and the value is now treated as a fixed euro amount.
+Click the `%` badge on any row. It flips to `€` and the value is now treated as a fixed euro amount rather than a share of your income.
 
 ---
 
