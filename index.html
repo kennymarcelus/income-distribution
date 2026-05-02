@@ -898,8 +898,8 @@
 
     function applyCurrency() {
       document.getElementById('currency-prefix').textContent = currentCurrency.symbol;
-      buildCurrencySelect();
-      updateAmounts();
+      document.getElementById('currency-select').value = currentCurrency.code;
+      render();
     }
 
     document.getElementById('currency-select').addEventListener('change', e => {
