@@ -103,6 +103,34 @@
       outline-offset: 2px;
     }
 
+    /* Currency select */
+    .currency-select {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 4px 24px 4px 10px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%239a9aa4' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      line-height: 1;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .currency-select:hover  { border-color: var(--yellow); }
+    .currency-select:focus-visible {
+      border-color: var(--yellow);
+      box-shadow: 0 0 0 2px rgba(245,197,24,0.3);
+    }
+
     /* ── Income display ────────────────────────────────────────── */
     .display-wrap {
       background: var(--yellow);
@@ -407,17 +435,20 @@
   <main class="app" aria-label="Income Distribution Calculator">
     <div class="app-header">
       <h1 class="app-title">Income Distribution</h1>
-      <div class="period-toggle" role="group" aria-label="View period">
-        <button class="period-btn active" id="btn-monthly" data-period="monthly">Mo</button>
-        <button class="period-btn"        id="btn-annual"  data-period="annual">Yr</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <select id="currency-select" class="currency-select" aria-label="Currency"></select>
+        <div class="period-toggle" role="group" aria-label="View period">
+          <button class="period-btn active" id="btn-monthly" data-period="monthly">Mo</button>
+          <button class="period-btn"        id="btn-annual"  data-period="annual">Yr</button>
+        </div>
       </div>
     </div>
 
     <!-- Income display -->
     <div class="display-wrap">
       <div class="display-inner">
-        <label for="income-input" class="sr-only">Total income in euros</label>
-        <span class="display-prefix" aria-hidden="true">€</span>
+        <label for="income-input" class="sr-only">Total income</label>
+        <span id="currency-prefix" class="display-prefix" aria-hidden="true">€</span>
         <input
           type="number"
           id="income-input"
@@ -455,6 +486,35 @@
   </main>
 
   <script>
+    // ── Currencies ───────────────────────────────────────────────
+    const CURRENCIES = [
+      { code: 'USD', symbol: '$',    name: 'US Dollar' },
+      { code: 'EUR', symbol: '€',    name: 'Euro' },
+      { code: 'GBP', symbol: '£',    name: 'British Pound' },
+      { code: 'JPY', symbol: '¥',    name: 'Japanese Yen',      decimals: 0 },
+      { code: 'CAD', symbol: 'CA$',  name: 'Canadian Dollar' },
+      { code: 'AUD', symbol: 'A$',   name: 'Australian Dollar' },
+      { code: 'CHF', symbol: 'CHF',  name: 'Swiss Franc' },
+      { code: 'CNY', symbol: '¥',    name: 'Chinese Yuan' },
+      { code: 'INR', symbol: '₹',    name: 'Indian Rupee' },
+      { code: 'BRL', symbol: 'R$',   name: 'Brazilian Real' },
+      { code: 'MXN', symbol: 'MX$',  name: 'Mexican Peso' },
+      { code: 'KRW', symbol: '₩',    name: 'South Korean Won',  decimals: 0 },
+      { code: 'SGD', symbol: 'S$',   name: 'Singapore Dollar' },
+      { code: 'HKD', symbol: 'HK$',  name: 'Hong Kong Dollar' },
+      { code: 'NOK', symbol: 'kr',   name: 'Norwegian Krone' },
+      { code: 'SEK', symbol: 'kr',   name: 'Swedish Krona' },
+      { code: 'DKK', symbol: 'kr',   name: 'Danish Krone' },
+      { code: 'NZD', symbol: 'NZ$',  name: 'New Zealand Dollar' },
+      { code: 'ZAR', symbol: 'R',    name: 'South African Rand' },
+      { code: 'AED', symbol: 'AED',  name: 'UAE Dirham' },
+      { code: 'SAR', symbol: 'SAR',  name: 'Saudi Riyal' },
+      { code: 'THB', symbol: '฿',    name: 'Thai Baht' },
+      { code: 'MYR', symbol: 'RM',   name: 'Malaysian Ringgit' },
+      { code: 'PLN', symbol: 'zł',   name: 'Polish Złoty' },
+      { code: 'TRY', symbol: '₺',    name: 'Turkish Lira' },
+    ];
+
     // ── Categories ───────────────────────────────────────────────
     const CATEGORIES = [
       'Groceries', 'Transport', 'Housing', 'Utilities', 'Savings',
@@ -464,6 +524,7 @@
 
     // ── State ────────────────────────────────────────────────────
     let viewMode = 'monthly'; // 'monthly' | 'annual'
+    let currentCurrency = CURRENCIES.find(c => c.code === 'EUR');
 
     let rows = [
       { id: 1, label: 'Groceries',  type: 'percent', value: 0 },
@@ -508,8 +569,12 @@
 
     // ── Format ───────────────────────────────────────────────────
     function formatCurrency(n) {
-      if (isNaN(n)) return '€0.00';
-      return '€' + n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (isNaN(n)) return currentCurrency.symbol + '0';
+      const decimals = currentCurrency.decimals ?? 2;
+      return currentCurrency.symbol + n.toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      });
     }
 
     // ── Render ───────────────────────────────────────────────────
@@ -788,7 +853,7 @@
 
     function saveState() {
       const income = document.getElementById('income-input').value;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ income, rows, viewMode }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ income, rows, viewMode, currencyCode: currentCurrency.code }));
     }
 
     function loadState() {
@@ -805,6 +870,9 @@
         if (saved.viewMode === 'annual') {
           viewMode = 'annual';
         }
+        if (saved.currencyCode) {
+          currentCurrency = CURRENCIES.find(c => c.code === saved.currencyCode) || currentCurrency;
+        }
       } catch (e) {
         // Corrupt storage — start fresh
         localStorage.removeItem(STORAGE_KEY);
@@ -815,6 +883,29 @@
       document.getElementById('btn-monthly').classList.toggle('active', viewMode === 'monthly');
       document.getElementById('btn-annual').classList.toggle('active', viewMode === 'annual');
     }
+
+    function buildCurrencySelect() {
+      const sel = document.getElementById('currency-select');
+      sel.innerHTML = '';
+      CURRENCIES.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.code;
+        opt.textContent = c.code + ' — ' + c.name;
+        if (c.code === currentCurrency.code) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    function applyCurrency() {
+      document.getElementById('currency-prefix').textContent = currentCurrency.symbol;
+      buildCurrencySelect();
+      updateAmounts();
+    }
+
+    document.getElementById('currency-select').addEventListener('change', e => {
+      currentCurrency = CURRENCIES.find(c => c.code === e.target.value) || currentCurrency;
+      applyCurrency();
+    });
 
     document.querySelector('.period-toggle').addEventListener('click', e => {
       const btn = e.target.closest('.period-btn');
@@ -831,6 +922,8 @@
     // ── Init ─────────────────────────────────────────────────────
     loadState();
     applyToggleUI();
+    buildCurrencySelect();
+    document.getElementById('currency-prefix').textContent = currentCurrency.symbol;
     render();
     document.getElementById('income-input').focus();
   </script>
