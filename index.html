@@ -631,9 +631,9 @@
         if (row.type !== 'remaining') {
           const typeBtn = document.createElement('button');
           typeBtn.className = 'type-btn ' + (row.type === 'percent' ? 'pct' : 'fixed');
-          typeBtn.textContent = row.type === 'percent' ? '%' : '€';
+          typeBtn.textContent = row.type === 'percent' ? '%' : currentCurrency.symbol;
           typeBtn.dataset.rowId = row.id;
-          const currentType = row.type === 'percent' ? 'percentage' : 'fixed euro';
+          const currentType = row.type === 'percent' ? 'percentage' : `fixed ${currentCurrency.code}`;
           typeBtn.setAttribute('aria-label', `${row.label}: type is ${currentType}, click to toggle`);
           typeBtn.addEventListener('click', onTypeToggle);
           div.appendChild(typeBtn);
@@ -654,7 +654,7 @@
           valInput.inputMode = 'decimal';
           valInput.dataset.rowId = row.id;
           valInput.dataset.field = 'value';
-          const unit = row.type === 'percent' ? 'percent' : 'euros';
+          const unit = row.type === 'percent' ? 'percent' : currentCurrency.code;
           valInput.setAttribute('aria-label', `${row.label} value in ${unit}`);
           valInput.addEventListener('input', onValueInput);
           div.appendChild(valInput);
