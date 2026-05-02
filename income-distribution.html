@@ -56,14 +56,51 @@
       gap: 12px;
     }
 
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      margin-bottom: 4px;
+    }
     .app-title {
       font-size: 11px;
       font-weight: 600;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--muted);
-      padding: 0 4px;
-      margin-bottom: 4px;
+    }
+
+    /* Period toggle */
+    .period-toggle {
+      display: flex;
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .period-btn {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      transition: background 0.15s, color 0.15s;
+      line-height: 1;
+    }
+    .period-btn.active {
+      background: var(--surface);
+      color: var(--text);
+    }
+    .period-btn:focus-visible {
+      outline: 2px solid var(--yellow);
+      outline-offset: 2px;
     }
 
     /* ── Income display ────────────────────────────────────────── */
@@ -130,7 +167,23 @@
       padding: 13px 16px;
       border-bottom: 1px solid var(--border);
       min-height: 56px;
+      position: relative;
     }
+
+    /* Allocation bar */
+    .row-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      width: 0%;
+      border-radius: 0 2px 2px 0;
+      transition: width 0.25s ease;
+      pointer-events: none;
+    }
+    .row-bar.pct     { background: var(--yellow); opacity: 0.7; }
+    .row-bar.fixed   { background: var(--green);  opacity: 0.7; }
+    .row-bar.retained { background: var(--green); opacity: 0.5; }
     .row:last-child { border-bottom: none; }
     .row.retained {
       background: var(--surface2);
@@ -225,6 +278,16 @@
       text-align: right;
       white-space: nowrap;
       min-width: 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 1px;
+    }
+    .row-amount-pct {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      line-height: 1;
     }
     .row.retained .row-amount {
       font-size: 20px;
@@ -288,6 +351,45 @@
       color: var(--yellow);
     }
 
+    /* ── Templates strip ───────────────────────────────────────── */
+    .templates {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 2px;
+      flex-wrap: wrap;
+    }
+    .templates-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .template-btn {
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .template-btn:hover {
+      border-color: var(--yellow);
+      color: var(--yellow);
+      background: var(--yellow-bg);
+    }
+    .template-btn:focus-visible {
+      outline: 2px solid var(--yellow);
+      outline-offset: 2px;
+    }
+
     /* ── Responsive tweaks ─────────────────────────────────────── */
     @media (max-width: 400px) {
       body { padding: 16px 10px 40px; }
@@ -303,7 +405,13 @@
 </head>
 <body>
   <main class="app" aria-label="Income Distribution Calculator">
-    <h1 class="app-title">Income Distribution</h1>
+    <div class="app-header">
+      <h1 class="app-title">Income Distribution</h1>
+      <div class="period-toggle" role="group" aria-label="View period">
+        <button class="period-btn active" id="btn-monthly" data-period="monthly">Mo</button>
+        <button class="period-btn"        id="btn-annual"  data-period="annual">Yr</button>
+      </div>
+    </div>
 
     <!-- Income display -->
     <div class="display-wrap">
@@ -330,6 +438,13 @@
       aria-live="polite"
     ></ul>
 
+    <!-- Templates -->
+    <div class="templates">
+      <span class="templates-label">Quick start:</span>
+      <button class="template-btn" data-template="50-30-20">50/30/20</button>
+      <button class="template-btn" data-template="zero-based">Zero-Based</button>
+    </div>
+
     <!-- Add row -->
     <button class="add-row-btn" id="add-row-btn">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
@@ -348,6 +463,8 @@
     ];
 
     // ── State ────────────────────────────────────────────────────
+    let viewMode = 'monthly'; // 'monthly' | 'annual'
+
     let rows = [
       { id: 1, label: 'Groceries',  type: 'percent', value: 0 },
       { id: 2, label: 'Transport',  type: 'fixed',   value: 0 },
@@ -399,6 +516,7 @@
     function render() {
       const income = parseFloat(document.getElementById('income-input').value) || 0;
       const { amounts, overBy } = calculate(income);
+      const multiplier = viewMode === 'annual' ? 12 : 1;
       const container = document.getElementById('rows-container');
 
       // Silence live region during full DOM rebuild to avoid chatty announcements
@@ -434,7 +552,7 @@
           });
           label.addEventListener('change', e => {
             const r = rows.find(r => r.id === parseInt(e.target.dataset.rowId));
-            if (r) { r.label = e.target.value; }
+            if (r) { r.label = e.target.value; saveState(); }
           });
           div.appendChild(label);
         } else {
@@ -486,13 +604,27 @@
         const isRetained = row.type === 'remaining';
         const over = isRetained && overBy > 0;
         const formatted = over
-          ? `over by ${formatCurrency(overBy)}`
-          : formatCurrency(amounts[row.id]);
+          ? `over by ${formatCurrency(overBy * multiplier)}`
+          : formatCurrency(amounts[row.id] * multiplier);
         const amount = document.createElement('div');
         amount.className = 'row-amount';
-        amount.textContent = formatted;
         if (over) amount.style.color = 'var(--danger)';
         amount.setAttribute('aria-label', `${row.label}: ${formatted}`);
+
+        const mainSpan = document.createElement('span');
+        mainSpan.className = 'row-amount-main';
+        mainSpan.textContent = formatted;
+        amount.appendChild(mainSpan);
+
+        const pctSpan = document.createElement('span');
+        pctSpan.className = 'row-amount-pct';
+        pctSpan.setAttribute('aria-hidden', 'true');
+        if (row.type === 'fixed' && income > 0) {
+          const pct = Math.min(100, (amounts[row.id] / income) * 100);
+          pctSpan.textContent = pct.toFixed(1) + '%';
+        }
+        amount.appendChild(pctSpan);
+
         div.appendChild(amount);
 
         // Delete button (not for retained row)
@@ -510,11 +642,21 @@
           div.appendChild(spacer);
         }
 
+        // Allocation bar
+        const bar = document.createElement('div');
+        bar.className = 'row-bar ' + (row.type === 'remaining' ? 'retained' : row.type === 'percent' ? 'pct' : 'fixed');
+        bar.setAttribute('aria-hidden', 'true');
+        bar.dataset.barId = row.id;
+        div.appendChild(bar);
+
         container.appendChild(div);
       });
 
       // Re-enable live region after rebuild
       container.setAttribute('aria-live', 'polite');
+
+      // Persist structural changes (add/delete/type-toggle/label)
+      saveState();
 
       // Restore focus
       if (focusedRowId && focusedField) {
@@ -525,7 +667,38 @@
       }
     }
 
+    // ── Preset templates ─────────────────────────────────────────
+    const PRESETS = {
+      '50-30-20': [
+        { label: 'Housing',       type: 'percent', value: 30 },
+        { label: 'Groceries',     type: 'percent', value: 10 },
+        { label: 'Transport',     type: 'percent', value: 10 },
+        { label: 'Dining Out',    type: 'percent', value: 15 },
+        { label: 'Entertainment', type: 'percent', value: 15 },
+        { label: 'Savings',       type: 'percent', value: 20 },
+        { label: 'Retained in account', type: 'remaining', value: null },
+      ],
+      'zero-based': [
+        { label: 'Groceries', type: 'percent', value: 0 },
+        { label: 'Retained in account', type: 'remaining', value: null },
+      ],
+    };
+
+    document.querySelector('.templates').addEventListener('click', e => {
+      const btn = e.target.closest('.template-btn');
+      if (!btn) return;
+      const preset = PRESETS[btn.dataset.template];
+      if (!preset) return;
+      // Assign fresh IDs
+      rows = preset.map(r => ({ ...r, id: nextId++ }));
+      render();
+    });
+
     // ── Event handlers ───────────────────────────────────────────
+    // Save on label change
+    // (wired inside render() — label.addEventListener('change') already fires;
+    //  we also call saveState at the end of render for structural changes)
+
     function onTypeToggle(e) {
       const id = parseInt(e.target.dataset.rowId);
       const row = rows.find(r => r.id === id);
@@ -576,6 +749,7 @@
     function updateAmounts() {
       const income = parseFloat(document.getElementById('income-input').value) || 0;
       const { amounts, overBy } = calculate(income);
+      const multiplier = viewMode === 'annual' ? 12 : 1;
       document.querySelectorAll('#rows-container .row').forEach(div => {
         const id = parseInt(div.dataset.id);
         const row = rows.find(r => r.id === id);
@@ -584,16 +758,79 @@
           const isRetained = row.type === 'remaining';
           const over = isRetained && overBy > 0;
           const formatted = over
-            ? `over by ${formatCurrency(overBy)}`
-            : formatCurrency(amounts[id]);
-          amountEl.textContent = formatted;
+            ? `over by ${formatCurrency(overBy * multiplier)}`
+            : formatCurrency(amounts[id] * multiplier);
           amountEl.style.color = over ? 'var(--danger)' : '';
           amountEl.setAttribute('aria-label', `${row.label}: ${formatted}`);
+          const mainSpan = amountEl.querySelector('.row-amount-main');
+          if (mainSpan) mainSpan.textContent = formatted;
+          const pctSpan = amountEl.querySelector('.row-amount-pct');
+          if (pctSpan) {
+            if (row.type === 'fixed' && income > 0 && !over) {
+              const pct = Math.min(100, (amounts[id] / income) * 100);
+              pctSpan.textContent = pct.toFixed(1) + '%';
+            } else {
+              pctSpan.textContent = '';
+            }
+          }
+        }
+        // Update allocation bar width
+        const barEl = div.querySelector('.row-bar');
+        if (barEl && row) {
+          const pct = income > 0 ? Math.min(100, (amounts[id] / income) * 100) : 0;
+          barEl.style.width = pct + '%';
         }
       });
     }
 
+    // ── Persistence ──────────────────────────────────────────────
+    const STORAGE_KEY = 'income-distribution-v1';
+
+    function saveState() {
+      const income = document.getElementById('income-input').value;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ income, rows, viewMode }));
+    }
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (!saved) return;
+        if (saved.rows && Array.isArray(saved.rows) && saved.rows.length > 0) {
+          rows = saved.rows;
+          nextId = Math.max(...rows.map(r => r.id)) + 1;
+        }
+        if (saved.income) {
+          document.getElementById('income-input').value = saved.income;
+        }
+        if (saved.viewMode === 'annual') {
+          viewMode = 'annual';
+        }
+      } catch (e) {
+        // Corrupt storage — start fresh
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+
+    function applyToggleUI() {
+      document.getElementById('btn-monthly').classList.toggle('active', viewMode === 'monthly');
+      document.getElementById('btn-annual').classList.toggle('active', viewMode === 'annual');
+    }
+
+    document.querySelector('.period-toggle').addEventListener('click', e => {
+      const btn = e.target.closest('.period-btn');
+      if (!btn) return;
+      viewMode = btn.dataset.period;
+      applyToggleUI();
+      updateAmounts();
+    });
+
+    // Patch event handlers to also save
+    const _updateAmounts = updateAmounts;
+    updateAmounts = function() { _updateAmounts(); saveState(); };
+
     // ── Init ─────────────────────────────────────────────────────
+    loadState();
+    applyToggleUI();
     render();
     document.getElementById('income-input').focus();
   </script>

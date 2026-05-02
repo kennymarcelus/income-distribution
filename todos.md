@@ -59,8 +59,30 @@ All six fixes applied to `income-distribution.html`. Delete buttons are hidden b
 
 ---
 
+## Phase 5 — Power User Upgrades
+
+- [x] **1. localStorage persistence** — save `rows` + income value to `localStorage` on every change; restore on page load. User's budget survives refresh and is there waiting for them every visit.
+- [x] **2. Visual allocation bars** — thin colored bar inside each row showing that row's % share of total income. Instant visual understanding of where money flows.
+- [x] **3. Implicit % display for fixed rows** — rows set to fixed € show a small secondary label like `· 30%` so users always know the income share without mental math.
+- [x] **4. Monthly ↔ Annual toggle** — a small toggle near the income input. Enter monthly income, flip to see all amounts annualized (×12). Or enter annual and see monthly breakdowns.
+- [x] **5. Preset templates** — a "Start from a template" button offering: 50/30/20 (Needs/Wants/Savings), Zero-Based (all rows sum to 100%), Blank. Gives new users a meaningful starting point.
+
+### Priority order
+1 → 2 → 3 → 4 → 5 (each is independent; can ship one at a time)
+
+### Review — Phase 5
+All five power-user upgrades shipped to `income-distribution.html`:
+
+1. **localStorage persistence** — `saveState()` / `loadState()` round-trip `rows`, `income`, and `viewMode` on every change. Corrupt data fails silently and starts fresh.
+2. **Visual allocation bars** — 3px bar absolutely positioned at the bottom of each row; yellow for % rows, green for fixed/retained. Width animates via CSS transition; updates live as income changes.
+3. **Implicit % for fixed rows** — `.row-amount` is now a two-span flex column: main amount on top, small muted percentage below (only for fixed rows when income > 0).
+4. **Monthly ↔ Annual toggle** — `Mo / Yr` segmented pill top-right. Multiplies all displayed amounts ×12 in Annual mode; bars and implicit % unaffected (ratio-based). Persisted in localStorage.
+5. **Preset templates** — `Quick start: [50/30/20] [Zero-Based]` strip above Add Row. 50/30/20 loads 6 pre-configured % rows totalling 100%. Zero-Based loads a single blank row. Both assign fresh IDs and re-render.
+
+---
+
 ## Remaining / To Consider
 
-- [ ] **localStorage persistence** — rows and values reset on refresh
-- [ ] **Export** — CSV download of current breakdown
-- [ ] **Calculation history** — log of past income entries with retained amounts
+- [ ] **Export** — CSV or plain-text copy of current breakdown
+- [ ] **Custom free-text labels** — let users type their own category name instead of dropdown-only
+- [ ] **Drag to reorder rows**
