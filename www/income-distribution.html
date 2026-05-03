@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Income Distribution</title>
+  <style>
+    /* ── Design tokens ─────────────────────────────────────────── */
+    :root {
+      --bg:        #161618;
+      --surface:   #1e1e20;
+      --surface2:  #28282c;
+      --border:    #333336;
+      --text:      #f0f0f0;
+      --muted:     #9a9aa4;
+      --yellow:    #f5c518;
+      --yellow-bg: rgba(245, 197, 24, 0.12);
+      --green:     #30d158;
+      --danger:    #ff453a;
+      --radius:    14px;
+      --font-ui:   -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-num:  'SF Mono', 'Fira Mono', 'Consolas', monospace;
+    }
+
+    /* ── Screen-reader only utility ────────────────────────────── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Reset ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    /* ── App shell ─────────────────────────────────────────────── */
+    .app {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      margin-bottom: 4px;
+    }
+    .app-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* Period toggle */
+    .period-toggle {
+      display: flex;
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .period-btn {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      transition: background 0.15s, color 0.15s;
+      line-height: 1;
+    }
+    .period-btn.active {
+      background: var(--surface);
+      color: var(--text);
+    }
+    .period-btn:focus-visible {
+      outline: 2px solid var(--yellow);
+      outline-offset: 2px;
+    }
+
+    /* Currency select */
+    .currency-select {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 4px 24px 4px 10px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%239a9aa4' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      line-height: 1;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .currency-select:hover  { border-color: var(--yellow); }
+    .currency-select:focus-visible {
+      border-color: var(--yellow);
+      box-shadow: 0 0 0 2px rgba(245,197,24,0.3);
+    }
+
+    /* ── Income display ────────────────────────────────────────── */
+    .display-wrap {
+      background: var(--yellow);
+      border-radius: var(--radius);
+      padding: 2px;
+    }
+    .display-wrap:focus-within {
+      outline: 3px solid #1a1400;
+      outline-offset: 3px;
+    }
+    .display-inner {
+      background: var(--yellow);
+      border-radius: calc(var(--radius) - 2px);
+      display: flex;
+      align-items: center;
+      padding: 18px 22px;
+      gap: 8px;
+    }
+    .display-prefix {
+      font-family: var(--font-num);
+      font-size: 36px;
+      font-weight: 700;
+      color: #1a1400;
+      line-height: 1;
+      user-select: none;
+    }
+    #income-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none; /* focus handled on .display-wrap below */
+      font-family: var(--font-num);
+      font-size: 44px;
+      font-weight: 700;
+      color: #1a1400;
+      line-height: 1;
+      width: 100%;
+      min-width: 0;
+      caret-color: #1a1400;
+    }
+    #income-input::placeholder { color: rgba(26, 20, 0, 0.35); }
+    /* hide number spinners */
+    #income-input::-webkit-inner-spin-button,
+    #income-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    #income-input[type=number] { -moz-appearance: textfield; }
+
+    /* ── Distribution card ─────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      overflow: hidden;
+      list-style: none;
+      padding: 0;
+    }
+
+    /* ── Row ───────────────────────────────────────────────────── */
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto auto;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+      min-height: 56px;
+      position: relative;
+    }
+
+    /* Allocation bar */
+    .row-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      width: 0%;
+      border-radius: 0 2px 2px 0;
+      transition: width 0.25s ease;
+      pointer-events: none;
+    }
+    .row-bar.pct     { background: var(--yellow); opacity: 0.7; }
+    .row-bar.fixed   { background: var(--green);  opacity: 0.7; }
+    .row-bar.retained { background: var(--green); opacity: 0.5; }
+    .row:last-child { border-bottom: none; }
+    .row.retained {
+      background: var(--surface2);
+      border-top: 1px solid var(--border);
+      border-bottom: none;
+    }
+
+    /* Label */
+    .row-label {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      background: transparent;
+      border: none;
+      outline: none;
+      min-width: 0;
+      cursor: pointer;
+      border-radius: 4px;
+      padding: 2px 14px 2px 4px;
+      margin-left: -4px;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%239a9aa4' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 4px center;
+      transition: background-color 0.15s;
+      font-family: var(--font-ui);
+    }
+    .row-label:hover { background-color: var(--surface2); }
+    .row-label:focus-visible {
+      background-color: var(--surface2);
+      box-shadow: 0 0 0 2px var(--yellow);
+    }
+    .row.retained .row-label {
+      color: var(--green);
+      cursor: default;
+      background-image: none;
+      pointer-events: none;
+    }
+
+    /* Type toggle / badge */
+    .type-btn {
+      font-family: var(--font-num);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      line-height: 1;
+      min-width: 38px;
+      text-align: center;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .type-btn:focus-visible {
+      outline: 2px solid var(--yellow);
+      outline-offset: 2px;
+    }
+    .type-btn.pct  { background: rgba(245,197,24,0.18); color: var(--yellow); }
+    .type-btn.fixed { background: rgba(48,209,88,0.18); color: var(--green); }
+
+    /* Value input */
+    .row-value {
+      font-family: var(--font-num);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 5px 8px;
+      width: 72px;
+      text-align: right;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .row-value:focus-visible {
+      border-color: var(--yellow);
+      box-shadow: 0 0 0 2px rgba(245,197,24,0.3);
+    }
+    .row-value::-webkit-inner-spin-button,
+    .row-value::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .row-value[type=number] { -moz-appearance: textfield; }
+
+    /* Calculated amount */
+    .row-amount {
+      font-family: var(--font-num);
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      text-align: right;
+      white-space: nowrap;
+      min-width: 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 1px;
+    }
+    .row-amount-pct {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      line-height: 1;
+    }
+    .row.retained .row-amount {
+      font-size: 20px;
+      color: var(--green);
+    }
+
+    /* Delete button */
+    .delete-btn {
+      background: none;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 6px;
+      border-radius: 6px;
+      opacity: 0;
+      transition: opacity 0.15s;
+      min-width: 32px;
+      text-align: center;
+    }
+    .row:hover .delete-btn { opacity: 0.55; }
+    .delete-btn:hover { opacity: 1 !important; }
+    .delete-btn:focus-visible {
+      opacity: 1 !important;
+      outline: 2px solid var(--danger);
+      outline-offset: 2px;
+    }
+
+    /* Spacer for retained row (no delete btn) */
+    .row-spacer { width: 32px; flex-shrink: 0; }
+
+    /* ── Add row button ─────────────────────────────────────────── */
+    .add-row-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      width: 100%;
+      padding: 14px;
+      background: var(--surface);
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .add-row-btn:hover {
+      border-color: var(--yellow);
+      color: var(--yellow);
+      background: var(--yellow-bg);
+    }
+    .add-row-btn:focus-visible {
+      outline: 2px solid var(--yellow);
+      outline-offset: 2px;
+      border-color: var(--yellow);
+      color: var(--yellow);
+    }
+
+    /* ── Templates strip ───────────────────────────────────────── */
+    .templates {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 2px;
+      flex-wrap: wrap;
+    }
+    .templates-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .template-btn {
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .template-btn:hover {
+      border-color: var(--yellow);
+      color: var(--yellow);
+      background: var(--yellow-bg);
+    }
+    .template-btn:focus-visible {
+      outline: 2px solid var(--yellow);
+      outline-offset: 2px;
+    }
+
+    /* ── Responsive tweaks ─────────────────────────────────────── */
+    @media (max-width: 400px) {
+      body { padding: 16px 10px 40px; }
+      .display-inner { padding: 14px 16px; }
+      .display-prefix { font-size: 28px; }
+      #income-input { font-size: 36px; }
+      .row { padding: 12px 12px; gap: 6px; }
+      .row-amount { min-width: 74px; font-size: 15px; }
+      .row-value { width: 62px; }
+      .row.retained .row-amount { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="Income Distribution Calculator">
+    <div class="app-header">
+      <h1 class="app-title">Income Distribution</h1>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <select id="currency-select" class="currency-select" aria-label="Currency"></select>
+        <div class="period-toggle" role="group" aria-label="View period">
+          <button class="period-btn active" id="btn-monthly" data-period="monthly">Mo</button>
+          <button class="period-btn"        id="btn-annual"  data-period="annual">Yr</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Income display -->
+    <div class="display-wrap">
+      <div class="display-inner">
+        <label for="income-input" class="sr-only">Total income</label>
+        <span id="currency-prefix" class="display-prefix" aria-hidden="true">€</span>
+        <input
+          type="number"
+          id="income-input"
+          placeholder="0"
+          min="0"
+          step="any"
+          inputmode="decimal"
+          autocomplete="off"
+        />
+      </div>
+    </div>
+
+    <!-- Distribution rows -->
+    <ul
+      class="card"
+      id="rows-container"
+      aria-label="Income distribution breakdown"
+      aria-live="polite"
+    ></ul>
+
+    <!-- Templates -->
+    <div class="templates">
+      <span class="templates-label">Quick start:</span>
+      <button class="template-btn" data-template="50-30-20">50/30/20</button>
+      <button class="template-btn" data-template="zero-based">Zero-Based</button>
+    </div>
+
+    <!-- Add row -->
+    <button class="add-row-btn" id="add-row-btn">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+        <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      Add Row
+    </button>
+  </main>
+
+  <script>
+    // ── Currencies ───────────────────────────────────────────────
+    const CURRENCIES = [
+      { code: 'USD', symbol: '$',    name: 'US Dollar' },
+      { code: 'EUR', symbol: '€',    name: 'Euro' },
+      { code: 'GBP', symbol: '£',    name: 'British Pound' },
+      { code: 'JPY', symbol: '¥',    name: 'Japanese Yen',      decimals: 0 },
+      { code: 'CAD', symbol: 'CA$',  name: 'Canadian Dollar' },
+      { code: 'AUD', symbol: 'A$',   name: 'Australian Dollar' },
+      { code: 'CHF', symbol: 'CHF',  name: 'Swiss Franc' },
+      { code: 'CNY', symbol: '¥',    name: 'Chinese Yuan' },
+      { code: 'INR', symbol: '₹',    name: 'Indian Rupee' },
+      { code: 'BRL', symbol: 'R$',   name: 'Brazilian Real' },
+      { code: 'MXN', symbol: 'MX$',  name: 'Mexican Peso' },
+      { code: 'KRW', symbol: '₩',    name: 'South Korean Won',  decimals: 0 },
+      { code: 'SGD', symbol: 'S$',   name: 'Singapore Dollar' },
+      { code: 'HKD', symbol: 'HK$',  name: 'Hong Kong Dollar' },
+      { code: 'NOK', symbol: 'kr',   name: 'Norwegian Krone' },
+      { code: 'SEK', symbol: 'kr',   name: 'Swedish Krona' },
+      { code: 'DKK', symbol: 'kr',   name: 'Danish Krone' },
+      { code: 'NZD', symbol: 'NZ$',  name: 'New Zealand Dollar' },
+      { code: 'ZAR', symbol: 'R',    name: 'South African Rand' },
+      { code: 'AED', symbol: 'AED',  name: 'UAE Dirham' },
+      { code: 'SAR', symbol: 'SAR',  name: 'Saudi Riyal' },
+      { code: 'THB', symbol: '฿',    name: 'Thai Baht' },
+      { code: 'MYR', symbol: 'RM',   name: 'Malaysian Ringgit' },
+      { code: 'PLN', symbol: 'zł',   name: 'Polish Złoty' },
+      { code: 'TRY', symbol: '₺',    name: 'Turkish Lira' },
+    ];
+
+    // ── Categories ───────────────────────────────────────────────
+    const CATEGORIES = [
+      'Groceries', 'Transport', 'Housing', 'Utilities', 'Savings',
+      'Taxes', 'Insurance', 'Healthcare', 'Entertainment', 'Dining Out',
+      'Clothing', 'Education', 'Subscriptions', 'Personal Care', 'Other',
+    ];
+
+    // ── State ────────────────────────────────────────────────────
+    let viewMode = 'monthly'; // 'monthly' | 'annual'
+    let currentCurrency = CURRENCIES.find(c => c.code === 'EUR');
+
+    let rows = [
+      { id: 1, label: 'Groceries',  type: 'percent', value: 0 },
+      { id: 2, label: 'Transport',  type: 'fixed',   value: 0 },
+      { id: 3, label: 'Housing',    type: 'percent', value: 0 },
+      { id: 4, label: 'Other',      type: 'fixed',   value: 0 },
+      { id: 5, label: 'Retained in account', type: 'remaining', value: null},
+    ];
+    let nextId = Math.max(...rows.map(r => r.id)) + 1;
+
+    // ── Calculation ──────────────────────────────────────────────
+    function calculate(income) {
+      let allocated = 0;
+      const amounts = {};
+
+      if (income === 0) {
+        rows.forEach(row => { amounts[row.id] = 0; });
+        return { amounts, overBy: 0 };
+      }
+
+      rows.forEach(row => {
+        if (row.type === 'percent') {
+          const amt = income * (row.value / 100);
+          amounts[row.id] = amt;
+          allocated += amt;
+        } else if (row.type === 'fixed') {
+          const amt = row.value;
+          amounts[row.id] = amt;
+          allocated += amt;
+        }
+      });
+
+      const overBy = Math.max(0, allocated - income);
+      rows.forEach(row => {
+        if (row.type === 'remaining') {
+          amounts[row.id] = Math.max(0, income - allocated);
+        }
+      });
+
+      return { amounts, overBy };
+    }
+
+    // ── Format ───────────────────────────────────────────────────
+    function formatCurrency(n) {
+      if (isNaN(n)) return currentCurrency.symbol + '0';
+      const decimals = currentCurrency.decimals ?? 2;
+      return currentCurrency.symbol + n.toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      });
+    }
+
+    // ── Render ───────────────────────────────────────────────────
+    function render() {
+      const income = parseFloat(document.getElementById('income-input').value) || 0;
+      const { amounts, overBy } = calculate(income);
+      const multiplier = viewMode === 'annual' ? 12 : 1;
+      const container = document.getElementById('rows-container');
+
+      // Silence live region during full DOM rebuild to avoid chatty announcements
+      container.removeAttribute('aria-live');
+
+      // Preserve focus state
+      const focused = document.activeElement;
+      const focusedRowId = focused ? parseInt(focused.dataset.rowId) : null;
+      const focusedField = focused ? focused.dataset.field : null;
+
+      container.innerHTML = '';
+
+      rows.forEach(row => {
+        const div = document.createElement('li');
+        div.className = 'row' + (row.type === 'remaining' ? ' retained' : '');
+        div.dataset.id = row.id;
+
+        // Label
+        if (row.type !== 'remaining') {
+          const label = document.createElement('select');
+          label.className = 'row-label';
+          label.dataset.rowId = row.id;
+          label.dataset.field = 'label';
+          label.setAttribute('aria-label', `Category: ${row.label}`);
+          // Build options — ensure current label is always present
+          const opts = CATEGORIES.includes(row.label) ? CATEGORIES : [row.label, ...CATEGORIES];
+          opts.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat;
+            opt.textContent = cat;
+            if (cat === row.label) opt.selected = true;
+            label.appendChild(opt);
+          });
+          label.addEventListener('change', e => {
+            const r = rows.find(r => r.id === parseInt(e.target.dataset.rowId));
+            if (r) { r.label = e.target.value; saveState(); }
+          });
+          div.appendChild(label);
+        } else {
+          const label = document.createElement('span');
+          label.className = 'row-label';
+          label.textContent = row.label;
+          div.appendChild(label);
+        }
+
+        // Type badge / toggle (hidden for retained row)
+        if (row.type !== 'remaining') {
+          const typeBtn = document.createElement('button');
+          typeBtn.className = 'type-btn ' + (row.type === 'percent' ? 'pct' : 'fixed');
+          typeBtn.textContent = row.type === 'percent' ? '%' : currentCurrency.symbol;
+          typeBtn.dataset.rowId = row.id;
+          const currentType = row.type === 'percent' ? 'percentage' : `fixed ${currentCurrency.code}`;
+          typeBtn.setAttribute('aria-label', `${row.label}: type is ${currentType}, click to toggle`);
+          typeBtn.addEventListener('click', onTypeToggle);
+          div.appendChild(typeBtn);
+        } else {
+          const spacer = document.createElement('div');
+          spacer.setAttribute('aria-hidden', 'true');
+          div.appendChild(spacer);
+        }
+
+        // Value input (not for remaining)
+        if (row.type !== 'remaining') {
+          const valInput = document.createElement('input');
+          valInput.type = 'number';
+          valInput.className = 'row-value';
+          valInput.value = row.value;
+          valInput.min = '0';
+          valInput.step = '1';
+          valInput.inputMode = 'decimal';
+          valInput.dataset.rowId = row.id;
+          valInput.dataset.field = 'value';
+          const unit = row.type === 'percent' ? 'percent' : currentCurrency.code;
+          valInput.setAttribute('aria-label', `${row.label} value in ${unit}`);
+          valInput.addEventListener('input', onValueInput);
+          div.appendChild(valInput);
+        } else {
+          // Empty spacer so grid stays aligned
+          const spacer = document.createElement('div');
+          spacer.setAttribute('aria-hidden', 'true');
+          div.appendChild(spacer);
+        }
+
+        // Calculated amount
+        const isRetained = row.type === 'remaining';
+        const over = isRetained && overBy > 0;
+        const formatted = over
+          ? `over by ${formatCurrency(overBy * multiplier)}`
+          : formatCurrency(amounts[row.id] * multiplier);
+        const amount = document.createElement('div');
+        amount.className = 'row-amount';
+        if (over) amount.style.color = 'var(--danger)';
+        amount.setAttribute('aria-label', `${row.label}: ${formatted}`);
+
+        const mainSpan = document.createElement('span');
+        mainSpan.className = 'row-amount-main';
+        mainSpan.textContent = formatted;
+        amount.appendChild(mainSpan);
+
+        const pctSpan = document.createElement('span');
+        pctSpan.className = 'row-amount-pct';
+        pctSpan.setAttribute('aria-hidden', 'true');
+        if (row.type === 'fixed' && income > 0) {
+          const pct = Math.min(100, (amounts[row.id] / income) * 100);
+          pctSpan.textContent = pct.toFixed(1) + '%';
+        }
+        amount.appendChild(pctSpan);
+
+        div.appendChild(amount);
+
+        // Delete button (not for retained row)
+        if (row.type !== 'remaining') {
+          const delBtn = document.createElement('button');
+          delBtn.className = 'delete-btn';
+          delBtn.textContent = '×';
+          delBtn.dataset.rowId = row.id;
+          delBtn.setAttribute('aria-label', `Remove ${row.label} row`);
+          delBtn.addEventListener('click', onDeleteRow);
+          div.appendChild(delBtn);
+        } else {
+          const spacer = document.createElement('div');
+          spacer.setAttribute('aria-hidden', 'true');
+          div.appendChild(spacer);
+        }
+
+        // Allocation bar
+        const bar = document.createElement('div');
+        bar.className = 'row-bar ' + (row.type === 'remaining' ? 'retained' : row.type === 'percent' ? 'pct' : 'fixed');
+        bar.setAttribute('aria-hidden', 'true');
+        bar.dataset.barId = row.id;
+        div.appendChild(bar);
+
+        container.appendChild(div);
+      });
+
+      // Re-enable live region after rebuild
+      container.setAttribute('aria-live', 'polite');
+
+      // Persist structural changes (add/delete/type-toggle/label)
+      saveState();
+
+      // Restore focus
+      if (focusedRowId && focusedField) {
+        const el = container.querySelector(`[data-row-id="${focusedRowId}"][data-field="${focusedField}"]`);
+        if (el && el !== document.activeElement) {
+          el.focus();
+        }
+      }
+    }
+
+    // ── Preset templates ─────────────────────────────────────────
+    const PRESETS = {
+      '50-30-20': [
+        { label: 'Housing',       type: 'percent', value: 30 },
+        { label: 'Groceries',     type: 'percent', value: 10 },
+        { label: 'Transport',     type: 'percent', value: 10 },
+        { label: 'Dining Out',    type: 'percent', value: 15 },
+        { label: 'Entertainment', type: 'percent', value: 15 },
+        { label: 'Savings',       type: 'percent', value: 20 },
+        { label: 'Retained in account', type: 'remaining', value: null },
+      ],
+      'zero-based': [
+        { label: 'Groceries', type: 'percent', value: 0 },
+        { label: 'Retained in account', type: 'remaining', value: null },
+      ],
+    };
+
+    document.querySelector('.templates').addEventListener('click', e => {
+      const btn = e.target.closest('.template-btn');
+      if (!btn) return;
+      const preset = PRESETS[btn.dataset.template];
+      if (!preset) return;
+      // Assign fresh IDs
+      rows = preset.map(r => ({ ...r, id: nextId++ }));
+      render();
+    });
+
+    // ── Event handlers ───────────────────────────────────────────
+    // Save on label change
+    // (wired inside render() — label.addEventListener('change') already fires;
+    //  we also call saveState at the end of render for structural changes)
+
+    function onTypeToggle(e) {
+      const id = parseInt(e.target.dataset.rowId);
+      const row = rows.find(r => r.id === id);
+      if (row) {
+        row.type = row.type === 'percent' ? 'fixed' : 'percent';
+        if (row.type === 'percent' && (row.value > 100 || row.value === 0)) row.value = 10;
+        render();
+      }
+    }
+
+    function onValueInput(e) {
+      const id = parseInt(e.target.dataset.rowId);
+      const row = rows.find(r => r.id === id);
+      if (row) {
+        row.value = Math.max(0, parseFloat(e.target.value) || 0);
+        // Only re-render the amounts, not the whole DOM (keeps focus)
+        updateAmounts();
+      }
+    }
+
+    function onDeleteRow(e) {
+      const id = parseInt(e.target.dataset.rowId);
+      rows = rows.filter(r => r.id !== id);
+      render();
+    }
+
+    document.getElementById('add-row-btn').addEventListener('click', () => {
+      // Insert before the retained row
+      const retainedIdx = rows.findIndex(r => r.type === 'remaining');
+      const newRow = { id: nextId++, label: CATEGORIES[0], type: 'percent', value: 0 };
+      if (retainedIdx >= 0) {
+        rows.splice(retainedIdx, 0, newRow);
+      } else {
+        rows.push(newRow);
+      }
+      render();
+      // Focus the new label
+      const newLabel = document.querySelector(`[data-row-id="${newRow.id}"][data-field="label"]`);
+      if (newLabel) {
+        newLabel.focus();
+        if (newLabel.select) newLabel.select();
+      }
+    });
+
+    document.getElementById('income-input').addEventListener('input', updateAmounts);
+
+    // ── Lightweight amount-only update (preserves all inputs) ────
+    function updateAmounts() {
+      const income = parseFloat(document.getElementById('income-input').value) || 0;
+      const { amounts, overBy } = calculate(income);
+      const multiplier = viewMode === 'annual' ? 12 : 1;
+      document.querySelectorAll('#rows-container .row').forEach(div => {
+        const id = parseInt(div.dataset.id);
+        const row = rows.find(r => r.id === id);
+        const amountEl = div.querySelector('.row-amount');
+        if (amountEl && row) {
+          const isRetained = row.type === 'remaining';
+          const over = isRetained && overBy > 0;
+          const formatted = over
+            ? `over by ${formatCurrency(overBy * multiplier)}`
+            : formatCurrency(amounts[id] * multiplier);
+          amountEl.style.color = over ? 'var(--danger)' : '';
+          amountEl.setAttribute('aria-label', `${row.label}: ${formatted}`);
+          const mainSpan = amountEl.querySelector('.row-amount-main');
+          if (mainSpan) mainSpan.textContent = formatted;
+          const pctSpan = amountEl.querySelector('.row-amount-pct');
+          if (pctSpan) {
+            if (row.type === 'fixed' && income > 0 && !over) {
+              const pct = Math.min(100, (amounts[id] / income) * 100);
+              pctSpan.textContent = pct.toFixed(1) + '%';
+            } else {
+              pctSpan.textContent = '';
+            }
+          }
+        }
+        // Update allocation bar width
+        const barEl = div.querySelector('.row-bar');
+        if (barEl && row) {
+          const pct = income > 0 ? Math.min(100, (amounts[id] / income) * 100) : 0;
+          barEl.style.width = pct + '%';
+        }
+      });
+    }
+
+    // ── Persistence ──────────────────────────────────────────────
+    const STORAGE_KEY = 'income-distribution-v1';
+
+    function saveState() {
+      const income = document.getElementById('income-input').value;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ income, rows, viewMode, currencyCode: currentCurrency.code }));
+    }
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (!saved) return;
+        if (saved.rows && Array.isArray(saved.rows) && saved.rows.length > 0) {
+          rows = saved.rows;
+          nextId = Math.max(...rows.map(r => r.id)) + 1;
+        }
+        if (saved.income) {
+          document.getElementById('income-input').value = saved.income;
+        }
+        if (saved.viewMode === 'annual') {
+          viewMode = 'annual';
+        }
+        if (saved.currencyCode) {
+          currentCurrency = CURRENCIES.find(c => c.code === saved.currencyCode) || currentCurrency;
+        }
+      } catch (e) {
+        // Corrupt storage — start fresh
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+
+    function applyToggleUI() {
+      document.getElementById('btn-monthly').classList.toggle('active', viewMode === 'monthly');
+      document.getElementById('btn-annual').classList.toggle('active', viewMode === 'annual');
+    }
+
+    function buildCurrencySelect() {
+      const sel = document.getElementById('currency-select');
+      sel.innerHTML = '';
+      CURRENCIES.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.code;
+        opt.textContent = c.code + ' — ' + c.name;
+        if (c.code === currentCurrency.code) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    function applyCurrency() {
+      document.getElementById('currency-prefix').textContent = currentCurrency.symbol;
+      document.getElementById('currency-select').value = currentCurrency.code;
+      render();
+    }
+
+    document.getElementById('currency-select').addEventListener('change', e => {
+      currentCurrency = CURRENCIES.find(c => c.code === e.target.value) || currentCurrency;
+      applyCurrency();
+    });
+
+    document.querySelector('.period-toggle').addEventListener('click', e => {
+      const btn = e.target.closest('.period-btn');
+      if (!btn) return;
+      viewMode = btn.dataset.period;
+      applyToggleUI();
+      updateAmounts();
+    });
+
+    // Patch event handlers to also save
+    const _updateAmounts = updateAmounts;
+    updateAmounts = function() { _updateAmounts(); saveState(); };
+
+    // ── Init ─────────────────────────────────────────────────────
+    loadState();
+    applyToggleUI();
+    buildCurrencySelect();
+    document.getElementById('currency-prefix').textContent = currentCurrency.symbol;
+    render();
+    document.getElementById('income-input').focus();
+  </script>
+</body>
+</html>

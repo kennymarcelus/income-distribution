@@ -1,0 +1,26 @@
+{
+  "name": "income-distribution",
+  "version": "1.0.0",
+  "description": "A clean, minimal calculator for anyone who wants to see where their money goes. Enter your income or salary and it splits automatically across categories like housing, groceries, savings, and more — no buttons, no page reloads.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kennymarcelus/income-distribution.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kennymarcelus/income-distribution/issues"
+  },
+  "homepage": "https://github.com/kennymarcelus/income-distribution#readme",
+  "dependencies": {
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/ios": "^8.3.1"
+  }
+}
