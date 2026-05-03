@@ -45,7 +45,10 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: max(68px, env(safe-area-inset-top)) 16px max(68px, env(safe-area-inset-top));
+      padding-top: max(68px, env(safe-area-inset-top));
+      padding-bottom: max(68px, env(safe-area-inset-top));
+      padding-left: 16px;
+      padding-right: 16px;
     }
 
     /* ── App shell ─────────────────────────────────────────────── */
@@ -427,7 +430,7 @@
 
     /* ── Responsive tweaks ─────────────────────────────────────── */
     @media (max-width: 400px) {
-      body { padding: max(68px, env(safe-area-inset-top)) 10px max(68px, env(safe-area-inset-top)); }
+      body { padding-top: max(68px, env(safe-area-inset-top)); padding-bottom: max(68px, env(safe-area-inset-top)); padding-left: 10px; padding-right: 10px; }
       .display-inner { padding: 14px 16px; }
       .display-prefix { font-size: 28px; }
       #income-input { font-size: 36px; }
