@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Income Distribution</title>
   <style>
     /* ── Design tokens ─────────────────────────────────────────── */
@@ -40,17 +40,20 @@
       background: var(--bg);
       color: var(--text);
       font-family: var(--font-ui);
-      min-height: 100dvh;
+      height: 100dvh;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 24px 16px 48px;
+      padding: max(28px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
     }
 
     /* ── App shell ─────────────────────────────────────────────── */
     .app {
       width: 100%;
       max-width: 520px;
+      flex: 1;
+      min-height: 0;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -181,9 +184,13 @@
     .card {
       background: var(--surface);
       border-radius: var(--radius);
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
       list-style: none;
       padding: 0;
+      flex: 1;
+      min-height: 0;
     }
 
     /* ── Row ───────────────────────────────────────────────────── */
@@ -271,8 +278,8 @@
       outline: 2px solid var(--yellow);
       outline-offset: 2px;
     }
-    .type-btn.pct  { background: rgba(245,197,24,0.18); color: var(--yellow); }
-    .type-btn.fixed { background: rgba(48,209,88,0.18); color: var(--green); }
+    .type-btn.pct   { background: rgba(245,197,24,0.18); color: #f5c518; }
+    .type-btn.fixed { background: rgba(48,209,88,0.18);  color: #30d158; }
 
     /* Value input */
     .row-value {
@@ -420,7 +427,7 @@
 
     /* ── Responsive tweaks ─────────────────────────────────────── */
     @media (max-width: 400px) {
-      body { padding: 16px 10px 40px; }
+      body { padding: max(20px, env(safe-area-inset-top)) 10px max(20px, env(safe-area-inset-bottom)); }
       .display-inner { padding: 14px 16px; }
       .display-prefix { font-size: 28px; }
       #income-input { font-size: 36px; }
