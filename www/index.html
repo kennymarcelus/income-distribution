@@ -272,15 +272,10 @@
       border: none;
       outline: none;
       min-width: 0;
-      cursor: pointer;
+      cursor: text;
       border-radius: 4px;
-      padding: 2px 14px 2px 4px;
+      padding: 2px 4px;
       margin-left: -4px;
-      appearance: none;
-      -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%239a9aa4' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 4px center;
       transition: background-color 0.15s;
       font-family: var(--font-ui);
     }
@@ -649,21 +644,15 @@
 
         // Label
         if (row.type !== 'remaining') {
-          const label = document.createElement('select');
+          const label = document.createElement('input');
+          label.type = 'text';
           label.className = 'row-label';
           label.dataset.rowId = row.id;
           label.dataset.field = 'label';
+          label.value = row.label;
+          label.placeholder = 'Category';
           label.setAttribute('aria-label', `Category: ${row.label}`);
-          // Build options — ensure current label is always present
-          const opts = CATEGORIES.includes(row.label) ? CATEGORIES : [row.label, ...CATEGORIES];
-          opts.forEach(cat => {
-            const opt = document.createElement('option');
-            opt.value = cat;
-            opt.textContent = cat;
-            if (cat === row.label) opt.selected = true;
-            label.appendChild(opt);
-          });
-          label.addEventListener('change', e => {
+          label.addEventListener('input', e => {
             const r = rows.find(r => r.id === parseInt(e.target.dataset.rowId));
             if (r) { r.label = e.target.value; saveState(); }
           });
