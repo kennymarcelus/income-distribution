@@ -489,6 +489,11 @@
       outline-offset: 2px;
     }
 
+    /* ── Touch device: hide hover delete, use swipe only ──────── */
+    @media (hover: none) and (pointer: coarse) {
+      .delete-btn { display: none; }
+    }
+
     /* ── Responsive tweaks ─────────────────────────────────────── */
     @media (max-width: 400px) {
       body { padding-left: 12px; padding-right: 12px; }
