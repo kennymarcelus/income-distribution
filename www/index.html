@@ -76,21 +76,15 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
       border: 0.5px solid #e0e0e5;
     }
-    .app-header::before {
-      content: '';
-      display: block;
-      height: 3px;
-      width: 40px;
-      background: #f5c518;
-      border-radius: 2px;
-      margin-bottom: 10px;
-    }
     .app-title {
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.10em;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
       color: #1c1c1e;
+      display: inline-block;
+      border-bottom: 3px solid #f5c518;
+      padding-bottom: 4px;
     }
     .header-controls {
       display: flex;
@@ -176,8 +170,22 @@
       background: var(--yellow);
       border-radius: calc(var(--radius) - 2px);
       display: flex;
-      align-items: center;
+      flex-direction: column;
       padding: 24px 22px;
+      gap: 4px;
+    }
+    .display-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(26, 20, 0, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .display-row {
+      display: flex;
+      align-items: center;
       gap: 8px;
     }
     .display-prefix {
@@ -467,7 +475,7 @@
 <body>
   <main class="app" aria-label="Income Distribution Calculator">
     <div class="app-header">
-      <h1 class="app-title">Income Distribution</h1>
+      <h1 class="app-title">Paychop</h1>
       <div class="header-controls">
         <select id="currency-select" class="currency-select" aria-label="Currency"></select>
         <div class="period-toggle" role="group" aria-label="View period">
@@ -480,18 +488,21 @@
     <!-- Income display -->
     <div class="display-wrap">
       <div class="display-inner">
+        <span class="display-label" aria-hidden="true">Total Income</span>
         <label for="income-input" class="sr-only">Total income</label>
-        <span id="currency-prefix" class="display-prefix" aria-hidden="true">€</span>
-        <input
-          type="number"
-          id="income-input"
-          placeholder="0"
-          min="0"
-          step="any"
-          inputmode="decimal"
-          pattern="[0-9]*"
-          autocomplete="off"
-        />
+        <div class="display-row">
+          <span id="currency-prefix" class="display-prefix" aria-hidden="true">€</span>
+          <input
+            type="number"
+            id="income-input"
+            placeholder="0"
+            min="0"
+            step="any"
+            inputmode="decimal"
+            pattern="[0-9]*"
+            autocomplete="off"
+          />
+        </div>
       </div>
     </div>
 
@@ -565,7 +576,7 @@
       { id: 2, label: 'Transport',  type: 'fixed', value: 0 },
       { id: 3, label: 'Housing',    type: 'fixed', value: 0 },
       { id: 4, label: 'Other',      type: 'fixed', value: 0 },
-      { id: 5, label: 'Retained in account', type: 'remaining', value: null},
+      { id: 5, label: 'Left to allocate', type: 'remaining', value: null},
     ];
     let nextId = Math.max(...rows.map(r => r.id)) + 1;
 
@@ -776,11 +787,11 @@
         { label: 'Dining Out',    type: 'fixed', value: 15 },
         { label: 'Entertainment', type: 'fixed', value: 15 },
         { label: 'Savings',       type: 'fixed', value: 20 },
-        { label: 'Retained in account', type: 'remaining', value: null },
+        { label: 'Left to allocate', type: 'remaining', value: null },
       ],
       'zero-based': [
         { label: 'Groceries', type: 'fixed', value: 0 },
-        { label: 'Retained in account', type: 'remaining', value: null },
+        { label: 'Left to allocate', type: 'remaining', value: null },
       ],
     };
 
