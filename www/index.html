@@ -38,19 +38,20 @@
     html {
       font-size: 16px;
       overflow-x: hidden;
+      max-width: 100%;
     }
     body {
       background: var(--bg);
       color: var(--text);
       font-family: var(--font-ui);
-      min-height: 100dvh;
+      height: 100dvh;
       overflow-x: hidden;
-      overflow-y: auto;
+      overflow-y: hidden;
+      max-width: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
       padding-top: calc(env(safe-area-inset-top, 54px) + 12px);
-      padding-bottom: env(safe-area-inset-bottom, 34px);
       padding-left: 20px;
       padding-right: 20px;
     }
@@ -61,8 +62,28 @@
       max-width: 680px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      height: 100%;
+      overflow: hidden;
+      overflow-x: hidden;
       margin: 0 auto;
+    }
+    .sticky-top {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-bottom: 12px;
+      background: var(--bg);
+    }
+    .scroll-area {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-bottom: env(safe-area-inset-bottom, 34px);
     }
 
     .app-header {
@@ -509,6 +530,7 @@
 </head>
 <body>
   <main class="app" aria-label="Income Distribution Calculator">
+    <div class="sticky-top">
     <div class="app-header">
       <h1 class="app-title">Paychop</h1>
       <div class="header-controls">
@@ -540,7 +562,9 @@
         </div>
       </div>
     </div>
+    </div><!-- /.sticky-top -->
 
+    <div class="scroll-area">
     <!-- Distribution rows -->
     <ul
       class="card"
@@ -563,6 +587,7 @@
       </svg>
       Add Row
     </button>
+    </div><!-- /.scroll-area -->
   </main>
 
   <script>
