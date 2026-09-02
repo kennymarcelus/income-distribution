@@ -240,6 +240,28 @@
       border-bottom: 1px solid #f0f0f5;
       min-height: 68px;
       position: relative;
+      transform: translateX(0);
+      transition: transform 0.2s ease;
+    }
+    .row.swiped { transform: translateX(-80px); }
+
+    /* Swipe-to-delete action button */
+    .swipe-delete-action {
+      position: absolute;
+      left: 100%;
+      top: 0;
+      width: 80px;
+      height: 100%;
+      background: var(--danger);
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-ui);
     }
 
     /* Allocation bar */
@@ -813,6 +835,35 @@
         bar.dataset.barId = row.id;
         div.appendChild(bar);
 
+        // Swipe-to-delete action (touch devices, non-retained rows only)
+        if (row.type !== 'remaining') {
+          const swipeBtn = document.createElement('button');
+          swipeBtn.className = 'swipe-delete-action';
+          swipeBtn.textContent = 'Delete';
+          swipeBtn.setAttribute('aria-label', `Delete ${row.label} row`);
+          swipeBtn.dataset.rowId = row.id;
+          swipeBtn.addEventListener('click', e => {
+            closeAllSwiped();
+            onDeleteRow(e);
+          });
+          div.appendChild(swipeBtn);
+
+          // Touch swipe detection
+          let touchStartX = 0;
+          div.addEventListener('touchstart', e => {
+            touchStartX = e.touches[0].clientX;
+          }, { passive: true });
+          div.addEventListener('touchend', e => {
+            const delta = e.changedTouches[0].clientX - touchStartX;
+            if (delta < -40) {
+              closeAllSwiped();
+              div.classList.add('swiped');
+            } else if (delta > 40) {
+              div.classList.remove('swiped');
+            }
+          }, { passive: true });
+        }
+
         container.appendChild(div);
       });
 
@@ -1017,6 +1068,18 @@
     // Patch event handlers to also save
     const _updateAmounts = updateAmounts;
     updateAmounts = function() { _updateAmounts(); saveState(); };
+
+    // ── Swipe-to-delete helpers ───────────────────────────────────
+    function closeAllSwiped() {
+      document.querySelectorAll('#rows-container .row.swiped').forEach(r => r.classList.remove('swiped'));
+    }
+
+    document.addEventListener('touchstart', e => {
+      const row = e.target.closest('.row');
+      document.querySelectorAll('#rows-container .row.swiped').forEach(r => {
+        if (r !== row) r.classList.remove('swiped');
+      });
+    }, { passive: true });
 
     // ── Init ─────────────────────────────────────────────────────
     loadState();
