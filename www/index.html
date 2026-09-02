@@ -68,23 +68,26 @@
     .app-header {
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: 8px;
       padding: 16px 20px;
       margin-bottom: 4px;
-      background: #ffffff;
+      background: #1c1c1e;
       border-radius: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      border: 0.5px solid #e0e0e5;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      border: none;
     }
     .app-title {
       font-size: 28px;
       font-weight: 800;
       letter-spacing: 0.02em;
       text-transform: uppercase;
-      color: #1c1c1e;
+      color: #ffffff;
       display: inline-block;
       border-bottom: 3px solid #f5c518;
       padding-bottom: 4px;
+      text-align: center;
+      width: 100%;
     }
     .header-controls {
       display: flex;
@@ -95,7 +98,7 @@
     /* Period toggle */
     .period-toggle {
       display: flex;
-      background: #e5e5ea;
+      background: #2c2c2e;
       border-radius: 8px;
       padding: 2px;
       gap: 2px;
@@ -111,12 +114,12 @@
       border-radius: 6px;
       cursor: pointer;
       background: transparent;
-      color: var(--muted);
+      color: #8e8e93;
       transition: background 0.15s, color 0.15s;
       line-height: 1;
     }
     .period-btn.active {
-      background: white;
+      background: #f5c518;
       color: #1c1c1e;
     }
     .period-btn:focus-visible {
@@ -131,10 +134,10 @@
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      background: #e5e5ea;
-      border: none;
+      background: #2c2c2e;
+      border: 1px solid #3a3a3c;
       border-radius: 8px;
-      color: var(--text);
+      color: #ffffff;
       padding: 4px 24px 4px 10px;
       cursor: pointer;
       appearance: none;
